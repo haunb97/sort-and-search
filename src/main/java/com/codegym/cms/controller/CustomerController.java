@@ -1,0 +1,88 @@
+package com.codegym.cms.controller;
+
+import com.codegym.cms.model.Customer;
+import com.codegym.cms.service.CustomerService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+import java.util.Optional;
+
+
+@Controller
+public class CustomerController {
+    @Autowired
+    private CustomerService customerService;
+
+    @GetMapping("/customers")
+    public ModelAndView listCustomer(@RequestParam("s")Optional<String> s, @PageableDefault(size=2) Pageable pageable){
+        Page<Customer> customers;
+        if(s.isPresent()){
+            customers = customerService.findAllByFirstNameContaining(s.get(), pageable);
+        }else{
+            customers = customerService.findAll(pageable);
+        }
+        ModelAndView modelAndView = new ModelAndView("/customer/list");
+        modelAndView.addObject("customers", customers);
+        return modelAndView;
+    }
+
+    @GetMapping("/create-customer")
+    public ModelAndView showCreateForm(){
+        ModelAndView modelAndView = new ModelAndView("/customer/create");
+        modelAndView.addObject("customer",new Customer());
+        return modelAndView;
+    }
+    @PostMapping("/create-customer")
+    public ModelAndView saveCreateCustomer(@ModelAttribute("customer") Customer customer){
+        customerService.save(customer);
+
+        ModelAndView modelAndView = new ModelAndView("/customer/create");
+        modelAndView.addObject("customer", customer);
+        modelAndView.addObject("message","New customer created successfully");
+        return modelAndView;
+    }
+    @GetMapping("/edit-customer/{id}")
+    public ModelAndView showFormEdit(@PathVariable Long id){
+        Customer customer = customerService.findById(id);
+        if(customer != null){
+        ModelAndView modelAndView = new ModelAndView("/customer/edit");
+        modelAndView.addObject("customer", customer);
+        return modelAndView;
+        }else {
+            ModelAndView modelAndView = new ModelAndView("/error");
+            return modelAndView;
+        }
+    }
+    @PostMapping("/edit-customer")
+    public ModelAndView saveEdit(@ModelAttribute("customer")Customer customer){
+        customerService.save(customer);
+        ModelAndView modelAndView = new ModelAndView("/customer/edit");
+        modelAndView.addObject("customer", customer);
+        modelAndView.addObject("message", "Customer uppdated successfully");
+        return modelAndView;
+    }
+    @GetMapping("/delete-customer/{id}")
+    public ModelAndView showFormDelete(@PathVariable Long id){
+        Customer customer = customerService.findById(id);
+        if(customer != null) {
+            ModelAndView modelAndView = new ModelAndView("/customer/delete");
+            modelAndView.addObject("customer", customer);
+            return modelAndView;
+        }else {
+            ModelAndView modelAndView = new ModelAndView("/error");
+            return modelAndView;
+        }
+
+    }
+    @PostMapping("delete-customer")
+    public String deleteCustomer(@ModelAttribute("customer")Customer customer){
+        customerService.remove(customer.getId());
+        return "redirect:customers";
+    }
+
+
+}
